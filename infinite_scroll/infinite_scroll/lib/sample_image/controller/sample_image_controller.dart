@@ -1,9 +1,11 @@
+import 'package:infinite_scroll/sample_image/data/caching/cache_manager.dart';
 import 'package:rxdart/rxdart.dart';
 import '../data/model/sample_image.dart';
 import '../data/repository/sample_image_repository.dart';
 
 class ImageController {
   final SampleImageRepository _repository = SampleImageRepository();
+  final CacheManager _cacheManager = CacheManager();
   final _imagesSubject = BehaviorSubject<List<SampleImage>>.seeded([]);
   final _loadingSubject = BehaviorSubject<bool>.seeded(false);
   final _hasMoreSubject = BehaviorSubject<bool>.seeded(true);
@@ -15,7 +17,11 @@ class ImageController {
   Stream<bool> get loadingStream => _loadingSubject.stream;
   Stream<bool> get hasMoreStream => _hasMoreSubject.stream;
 
-  void fetchImages() async {
+  CacheManager getCacheManager() {
+    return _cacheManager;
+  }
+
+  void fetchImages({required int limit}) async {
     if (_loadingSubject.value) return;
 
     _loadingSubject.add(true);
@@ -29,6 +35,7 @@ class ImageController {
         _hasMoreSubject.add(false);
       } else {
         _imagesSubject.add(currentImages + images);
+        await _cacheManager.saveImages(currentImages + images);
       }
     } catch (e) {
       // Handle errors
